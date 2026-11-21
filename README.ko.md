@@ -39,13 +39,13 @@ npx skills add ByunghoChae/reviewer-team
 ```mermaid
 flowchart TD
     M["원고<br>.md · .pdf · .docx · .hwp"]
-    E1["<b>편집장 · 준비</b><br>마크다운 한 파일로 변환<br>분야 · 저널 · 유형 확정"]
-    A["A · 방법론<br>·통계"]
-    B["B · 비교<br>공정성"]
-    C["C · 도메인<br>전문가"]
-    D["D · 회의적 독자<br>/ novelty"]
-    W["E · 글쓰기<br>·표현"]
-    E2["<b>편집장 · 판단</b><br>리뷰 5개 전문을 읽고<br>이 논문에 필요 없는 지적은 빼고<br>남은 것에 순서를 매김"]
+    E1["<b>편집장 · 준비</b><br>마크다운<br>한 파일로 변환<br>분야 · 저널 · 유형<br>확정"]
+    A["A<br>방법론·통계"]
+    B["B<br>비교 공정성"]
+    C["C<br>도메인 전문가"]
+    D["D<br>회의적 독자<br>novelty"]
+    W["E<br>글쓰기·표현"]
+    E2["<b>편집장 · 판단</b><br>리뷰 5개를<br>전부 읽고<br>필요 없는 지적은<br>빼고 순서를 매김"]
     OUT(["meta-review.md"])
 
     M --> E1
