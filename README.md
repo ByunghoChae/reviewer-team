@@ -1,50 +1,72 @@
 # reviewer-team
 
-학술 논문 초안을 저널 피어리뷰처럼 심사하는 Claude Code 스킬.
+**A five-reviewer peer-review panel for your paper, inside Claude Code**
 
-편집장(Claude)이 리뷰어 5명을 서브에이전트로 병렬 소환해 독립 심사시키고,
-이 논문에 정말 필요한 조치만 가려 **메타리뷰와 수정 우선순위**를 만든다.
+English | [한국어](README.ko.md)
 
-| 리뷰어 | 보는 것 |
-|---|---|
-| 방법론·통계 | 재현성, 실험 통제, 유의성, 정보 누수 |
-| 비교 공정성 | 대조군·베이스라인 선정, 과장된 주장 |
-| 도메인 전문가 | 분야 내 타당성, 누락 문헌, 한계 서술 |
-| 회의적 독자 | 논리 공백, novelty, 대안 설명 |
-| 글쓰기·표현 | 구조, 그림·표, 용어 일관성 |
+- Reviews a manuscript the way a journal does: five reviewers read it separately, one editor sorts the results
+- Claude is the editor. The reviewers run in parallel as subagents and never see each other's reviews
+- You get one meta-review that says what to fix first, ranked Blocker → Major → Minor
+- The criteria adapt to your field, your manuscript type, and your target journal
+- Reviews are written in Korean, even for English manuscripts. Quotes, terms, and numbers stay in the original
+- Also works for theses, research proposals, and conference abstracts
 
-심사 기준은 세 가지에 맞춰 조정된다.
-
-- **분야**: ML·전산, 생명·수의·농생명(동물시험·사양시험), 의학·임상, 화학·재료, 사회과학
-- **원고 유형**: Meta-analysis / Research Article / Review 중 선택
-- **투고처**: 저널을 밝히지 않으면 심사 전에 적합한 저널 TOP 3 를 추천한다
-
-## 심사 원칙
-
-- 리뷰어는 논문만 본다. 초안 이력·메모·분석 로그 같은 작성 기록은 보지 않는다.
-- 저자 정보, 승인번호, 연구비처럼 아직 채우지 않은 행정 정보는 평가하지 않는다.
-- 판정도 수정도 바꾸지 않는 코멘트는 쓰지 않는다. 논점을 흐리는 지적은 편집장이 제외한다.
-
-## 설치
+## Install
 
 ```bash
 npx skills add ByunghoChae/reviewer-team
 ```
 
-또는 `skills/reviewer-team/` 폴더를 `~/.claude/skills/` 에 복사한다.
+Or copy `skills/reviewer-team/` into `~/.claude/skills/`. Restart Claude Code after installing.
 
-## 사용
+## Quick start
+
+1. Open Claude Code in the folder that holds your manuscript
+2. Type `/reviewer-team manuscript.md`
+3. Answer two questions: the manuscript type, and the target journal. No journal yet? Pick one of the three it suggests
+4. When it finishes, open `reviews/round-01/meta-review.md`
+
+Name the type and journal up front and it starts without asking:
 
 ```
-/reviewer-team <원고 경로>
-/reviewer-team <원고 경로> Meta-analysis, <저널명>
+/reviewer-team manuscript.md Meta-analysis, <journal name>
 ```
 
-원고 유형과 저널을 함께 적으면 묻지 않고 바로 심사한다.
+You can also just ask in plain words: "review this before I submit", "is there anything that could get this rejected?"
 
-또는 원고를 두고 "리뷰해줘", "투고 전에 봐줘", "reject 당할 만한 데 있나" 라고 말하면 자동으로 뜬다.
+## How it works
 
-출력은 원고 폴더 아래 `reviews/round-NN/` 에 저장된다.
+```mermaid
+flowchart TD
+    M["Your manuscript<br>.md · .pdf · .docx · .hwp"]
+    E1["<b>Editor · prepare</b><br>convert to one Markdown file<br>set field · journal · type"]
+    A["A · Methodology<br>& statistics"]
+    B["B · Fair<br>comparison"]
+    C["C · Domain<br>expert"]
+    D["D · Skeptical reader<br>/ novelty"]
+    W["E · Writing<br>& presentation"]
+    E2["<b>Editor · decide</b><br>read all five reviews<br>drop what this paper doesn't need<br>rank the rest"]
+    OUT(["meta-review.md"])
+
+    M --> E1
+    E1 --> A & B & C & D & W
+    A & B & C & D & W --> E2
+    E2 --> OUT
+```
+
+- The editor does not review the paper itself. Its job is deciding which comments matter
+- All five reviewers read the same file and get the same field, journal, and type, so their reviews can be compared
+- The editor sets the field. You choose the manuscript type and the journal
+
+| Reviewer | Looks at |
+|---|---|
+| A · Methodology & statistics | Reproducibility, experimental control, significance, data leakage |
+| B · Fair comparison | Choice of controls and baselines, overstated claims |
+| C · Domain expert | Soundness in the field, missing literature, limitations |
+| D · Skeptical reader | Logical gaps, novelty, alternative explanations, spin |
+| E · Writing & presentation | Structure, figures and tables, standard and consistent terminology |
+
+## What you get
 
 ```
 reviews/round-01/
@@ -53,16 +75,93 @@ reviews/round-01/
 ├── reviewer-domain.md
 ├── reviewer-novelty.md
 ├── reviewer-writing.md
-└── meta-review.md        ← 종합 판정 · 핵심 주장 · 수정 우선순위
+└── meta-review.md        ← read this first
 ```
 
-재심사를 요청하면 `round-02` 로 이어지고, 이전 Blocker 해결 여부를 대조한다.
+| `meta-review.md` section | What it tells you |
+|---|---|
+| Overall verdict | Accept / Minor Revision / Major Revision / Reject, plus each reviewer's verdict |
+| Core claim | The paper's main claim in one or two sentences. Every comment is judged against it |
+| Agreed issues | Problems that two or more reviewers found on their own |
+| Disputes | Where reviewers disagreed, and which side the editor takes and why |
+| Revision priorities | Blocker / Major / Minor, each with where to fix it and whether it needs new experiments |
+| Rebuttal notes | Comments you can push back on, and how to answer them |
 
-## 원고 형식
+## Revise and review again
 
-`.md` / `.txt` 는 바로 쓴다. PDF·DOCX·HWP 는 변환 스킬(`pdf-inspector`, `docx`, `hwpx-skill`)이
-있어야 한다. 없으면 마크다운으로 변환해서 넘긴다.
+Ask for another review after revising and the output goes to `round-02`. The editor checks every Blocker from the last round: resolved, partly resolved, or unresolved.
 
-## 라이선스
+The reviewers do not see the previous round. That way they look for new problems instead of only rechecking old ones.
+
+## Manuscript formats
+
+| You have | What happens |
+|---|---|
+| `.md`, `.txt` | Used as is |
+| `.pdf` | It asks which converter to use: `pdf-inspector` (fast, text PDFs) or `minerU` (slow, handles scans and equations) |
+| `.docx` | Converted with the `docx` skill |
+| `.hwp`, `.hwpx` | Converted with the `hwpx-skill` skill |
+| Text pasted into the chat | Saved as `manuscript.md` |
+
+The converted file is saved next to your manuscript as `manuscript-normalized.md`. Converters are separate skills; if you don't have the one you need, convert the file to Markdown yourself first.
+
+A `references.bib` or supplementary files next to the manuscript go to the reviewers too. Drafts, notes, analysis scripts, and logs do not. Peer review sees the paper, not how it was made.
+
+## What it does not do
+
+- Proofreading, polishing, or translation on their own. Use a writing tool for that
+- Writing a rebuttal letter for reviews you already received
+- Judging details you fill in at submission: authors, affiliations, funding, conflicts of interest, ethics approval numbers, DOI. Blanks and placeholders like `[TBD]` don't count against you. Gaps in methods or results still do
+- Ranking journals by prestige. Suggestions are based on scope and article type only, and impact factors appear only when verified
+
+## Reference
+
+How reviews are judged, in detail. The source of truth is [`skills/reviewer-team/SKILL.md`](skills/reviewer-team/SKILL.md).
+
+### Rules every reviewer follows
+
+- Each Major Issue names its location (section, table, figure, equation) and is tagged: fixable by revision / needs new experiments / not fixable
+- Uncertain points are marked as guesses. Nothing is assumed to be in the paper that isn't there
+- A comment is kept only if all three hold:
+  1. It makes the author change a specific place, or it changes the verdict
+  2. It is within what the paper actually claims and did
+  3. It belongs to that reviewer's area
+- Left out: "please clarify" with nothing to fix, extra experiments the claim doesn't need, future-work ideas, style preferences, lists of strengths
+- At most 5 Major Issues, 5 Minor Issues, and 3 Questions per reviewer
+- Verdict: Accept / Minor Revision / Major Revision / Reject
+
+### How the editor sorts comments
+
+| Question | Goes to |
+|---|---|
+| Without this fix, does the core claim fail, or would the journal reject it? | Blocker |
+| Would this fix raise the verdict by one step? | Major |
+| Same verdict, but a clearly better paper? | Minor |
+| None of the above | Dropped (only the count is reported) |
+
+When several reviewers agree, that shows a comment is true, not that the fix is needed. A fix that needs new experiments has to be clearly necessary to rank as Blocker or Major.
+
+### Field-specific checks
+
+The editor picks the field once and adds these checks for the relevant reviewers.
+
+| Field | Extra checks |
+|---|---|
+| ML / computing | Default criteria, plus the target venue's reproducibility and ethics requirements |
+| Life sciences, veterinary, animal & agricultural | Experimental unit vs. statistical unit (pseudoreplication), controls, values within normal ranges, plausible mechanisms, ARRIVE 2.0 / CONSORT / REFLECT / STROBE / PRISMA 2020, diet formulation calculated vs. analyzed |
+| Medicine / clinical | Randomization, allocation concealment, blinding, sample size, ITT vs. per-protocol, pre-specified outcomes, absolute vs. relative risk, CONSORT / STROBE / PRISMA |
+| Chemistry / materials | Reproducible synthesis conditions, enough characterization, controls, purity and source, detection limits, raw spectra |
+| Social science / surveys | Sampling and representativeness, response rate, scale reliability and validity, causal claims from cross-sectional data |
+| Other | The editor writes 3–5 field-specific reject reasons, or states that none were applied |
+
+### Manuscript-type checks
+
+| Type | Extra checks |
+|---|---|
+| Research Article | Default criteria |
+| Meta-analysis (incl. systematic review) | Reproducible search, pre-set eligibility, dual screening and extraction, effect-size and SD conversion, heterogeneity (I², τ², prediction interval), dependent effect sizes, publication bias and sensitivity analysis, risk-of-bias tool, GRADE, PRISMA 2020 |
+| Review (narrative) | How literature was found and chosen, balanced handling of conflicting results, key and recent papers, a synthesis beyond listing, conclusions within the evidence |
+
+## License
 
 MIT
